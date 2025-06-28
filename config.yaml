@@ -1,0 +1,18 @@
+device: "cuda"
+dataset_name: "jainr3/diffusiondb-pixelart"
+dataset_config: "2k_all"
+
+batch_size: 10
+learning_rate: 0.0002
+epochs: 40
+
+min_image_size: 16
+max_image_size: 64
+
+vae_channels: [128]
+channels: [128, 256, 512]
+
+palette_colors: 16
+
+out_dir: "./output"
+save_dir: "./models"
