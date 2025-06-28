@@ -33,6 +33,7 @@ class DynamicSizeTransform:
                 f"[Image {idx}] Original size: {orig_w}x{orig_h}, Resized to: {new_w}x{new_h} (scale: {scale:.3f})"
             )
 
+
             # Pad auf zentrales Quadrat
             new_img = Image.new("RGB", (target_size, target_size), (0, 0, 0))
             paste_x = (target_size - new_w) // 2
@@ -48,6 +49,9 @@ class DynamicSizeTransform:
                 transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
             ])
             tensor = t(new_img)
+
+            alpha = torch.ones((1, tensor.shape[1], tensor.shape[2]))
+            tensor = torch.cat([tensor, alpha], dim=0)
 
             # Optional: nochmal auf pad_size paddieren, falls batch-size ein größeres Pad braucht
             if self.pad_size > target_size:

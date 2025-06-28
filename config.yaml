@@ -4,15 +4,14 @@ dataset_config: "2k_all"
 
 batch_size: 10
 learning_rate: 0.0002
-epochs: 40
+epochs: 30
 
 min_image_size: 16
 max_image_size: 64
 
-vae_channels: [128]
-channels: [128, 256, 512]
-
-palette_colors: 16
+block_out_channels: [64, 128]
+channels: [256, 512, 1024]
+norm_groups: 32
 
 out_dir: "./output"
 save_dir: "./models"

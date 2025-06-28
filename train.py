@@ -18,16 +18,30 @@ class Trainer:
         self.use_vae = self.max_size > 32
         self.in_ch = self.out_ch = 4 if self.use_vae else 3
 
+        # UNet Konfiguration
+        unet_params = {
+            "sample_size": self.max_size,
+            "in_c": self.in_ch,
+            "out_c": self.out_ch,
+        }
+        if "channels" in config:
+            unet_params["channels"] = config["channels"]
+
         logging.info(f"Baue UNet auf, sample_size={self.max_size}, in_c={self.in_ch}, out_c={self.out_ch}")
-        self.unet = build_unet(
-            sample_size=self.max_size,
-            in_c=self.in_ch,
-            out_c=self.out_ch,
-            channels=config["channels"]
-        ).to(self.device)
+        self.unet = build_unet(**unet_params).to(self.device)
+
         if self.use_vae:
+            # VAE Konfiguration
+            vae_params = {
+                "image_size": self.max_size,
+            }
+            if "block_out_channels" in config:
+                vae_params["block_out_channels"] = config["block_out_channels"]
+
             logging.info("Baue VAE auf")
-        self.vae = build_vae(self.max_size).to(self.device) if self.use_vae else None
+            self.vae = build_vae(**vae_params).to(self.device)
+        else:
+            self.vae = None
 
         params = list(self.unet.parameters()) + (list(self.vae.parameters()) if self.vae else [])
         self.optimizer = torch.optim.AdamW(params, lr=float(config["learning_rate"]))
