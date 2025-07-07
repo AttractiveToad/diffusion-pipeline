@@ -1,17 +1,91 @@
+# device configuration
 device: "cuda"
-dataset_name: "jainr3/diffusiondb-pixelart"
-dataset_config: "2k_all"
 
-batch_size: 10
-learning_rate: 0.0002
-epochs: 30
+# dataset configuration
+dataset:
+  name: "jainr3/diffusiondb-pixelart"
+  config: "2k_all"
+  batch_size: 10
 
-min_image_size: 16
-max_image_size: 64
+# image configuration
+image:
+  min_size: 16
+  max_size: 64
 
-block_out_channels: [64, 128]
-channels: [256, 512, 1024]
-norm_groups: 32
+# model architecture
+models:
+  # UNet configuration
+  unet:
+    # kompakt: [32, 64], standard: [64, 128], detailliert: [128, 256]
+    block_out_channels: [64, 128]
+    
+    # kompakt: [128, 256, 512], standard: [256, 512, 1024], detailliert: [512, 768, 1024]
+    channels: [128, 256, 512]
+    
+    norm_num_groups: 32
 
-out_dir: "./output"
-save_dir: "./models"
+  # VAE configuration (auto wenn max_size > 32)
+  vae:
+    block_out_channels: [64, 128]
+
+  # CLIP text encoder configuration
+  clip:
+    model_name: "runwayml/stable-diffusion-v1-5"
+    max_length: 77
+    guidance_scale: 7.5  # classifier-free guidance
+
+# training configuration
+training:
+  epochs: 50
+  
+  # optimizer settings
+  optimizer:
+    type: "adamw"
+    betas: [0.9, 0.999]
+    weight_decay: 0.01
+  
+  # learning rate scheduler
+  lr_scheduler:
+    type: "constant"  # "constant", "cosine", "warmup_cosine"
+    min_lr: 1e-6      # nur bei cosine/warmup_cosine
+    warmup_steps: 500 # nur bei warmup_cosine
+
+  # training specifics
+  classifier_free_guidance_prob: 0.1  # 10% unconditional training
+
+# validation configuration
+validation:
+  frequency: 5
+  prompts:
+    - "pixel art house"
+    - "pixel art car"
+    - "pixel art character"
+
+  inference:
+    timesteps: [800, 400, 50]  # 3 steps
+    guidance_scale: 7.5
+    grid_size: 32
+
+# logging configuration
+logging:
+  tensorboard:
+    enabled: true
+    log_frequency: 10  # alle 10 batches
+    log_images: true
+    log_histograms: false  # gewichtsverteilungen
+  
+  console:
+    progress_frequency: 10  # progress update frequency
+
+# checkpointing configuration
+checkpointing:
+  save_best: true
+  save_frequency: null  # null = nur best model, sonst alle X epochen
+  keep_top_k: 3  # behalte nur die 3 besten modelle
+
+# directories
+paths:
+  output_dir: "./output"
+  save_dir: "./models"
+  tensorboard_dir: "./models/tensorboard"
+  checkpoints_dir: "./models/checkpoints"

@@ -9,4 +9,4 @@ def get_latent_from_vae(vae, images):
     with torch.no_grad():
         posterior = vae.encode(images).latent_dist
         latents = posterior.sample()
-        return 0.18215 * latents
+        return latents
