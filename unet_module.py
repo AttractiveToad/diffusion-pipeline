@@ -7,11 +7,11 @@ DEFAULT_UNET_CONFIG = {
     "center_input_sample": False,
     "flip_sin_to_cos": True,
     "freq_shift": 0,
-    
+
     # Block configuration
     "down_block_types": (
         "CrossAttnDownBlock2D",
-        "CrossAttnDownBlock2D", 
+        "CrossAttnDownBlock2D",
         "DownBlock2D"
     ),
     "mid_block_type": "UNetMidBlock2DCrossAttn",
@@ -20,7 +20,7 @@ DEFAULT_UNET_CONFIG = {
         "CrossAttnUpBlock2D",
         "CrossAttnUpBlock2D"
     ),
-    
+
     "only_cross_attention": False,
     "block_out_channels": (256, 512, 1024),
     "layers_per_block": 2,
@@ -30,38 +30,38 @@ DEFAULT_UNET_CONFIG = {
     "act_fn": "silu",
     "norm_num_groups": 32,
     "norm_eps": 1e-5,
-    
+
     # Cross attention configuration
     "cross_attention_dim": 768,  # CLIP text embedding dimension
     "transformer_layers_per_block": 1,
     "reverse_transformer_layers_per_block": None,
-    
+
     # Encoder configuration
     "encoder_hid_dim": None,
     "encoder_hid_dim_type": None,
-    
+
     # Attention configuration
     "attention_head_dim": 8,
     "num_attention_heads": None,  # If None, defaults to attention_head_dim
     "resnet_time_scale_shift": "default",
-    
+
     # Class and additional embeddings
     "class_embed_type": None,
     "addition_embed_type": None,
     "addition_time_embed_dim": None,
     "num_class_embeds": None,
-    
+
     # Time embedding configuration
     "time_embedding_type": "positional",
     "time_embedding_dim": None,
     "time_embedding_act_fn": None,
     "timestep_post_act": None,
     "time_cond_proj_dim": None,
-    
+
     # Convolution configuration
     "conv_in_kernel": 3,
     "conv_out_kernel": 3,
-    
+
     # Additional class embedding configuration
     "projection_class_embeddings_input_dim": None,
     "class_embeddings_concat": False,

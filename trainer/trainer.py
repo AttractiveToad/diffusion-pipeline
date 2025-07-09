@@ -2,6 +2,7 @@ import torch
 import logging
 import os
 from tqdm import tqdm
+from diffusers import DDPMScheduler
 from .model_builder import ModelBuilder
 from .scheduler import SchedulerFactory
 from .validator import Validator
@@ -17,6 +18,12 @@ class Trainer:
         self.device = torch.device(config.get("device", "cuda"))
         self.datamodule = datamodule
         self.global_step = 0
+        
+        # Noise scheduler für Training
+        self.noise_scheduler = DDPMScheduler(
+            num_train_timesteps=1000,
+            beta_schedule="linear"
+        )
 
         # Create directories
         self._setup_directories()
@@ -62,7 +69,7 @@ class Trainer:
         # Create optimizer
         self.optimizer = torch.optim.AdamW(
             params,
-            lr=float(training_config.get("learning_rate", 0.0002)),
+            lr=float(training_config.get("learning_rate", 1e-4)),
             betas=tuple(optimizer_config.get("betas", [0.9, 0.999])),
             weight_decay=optimizer_config.get("weight_decay", 0.01)
         )
@@ -104,6 +111,7 @@ class Trainer:
         # VAE Encoding
         if self.use_vae:
             latents = get_latent_from_vae(self.vae, images)
+            latents = latents * 0.18215  # VAE scaling factor
         else:
             latents = images
 
@@ -119,10 +127,12 @@ class Trainer:
                 device=self.device, max_length=self.clip_config["max_length"]
             )
 
-        # Noise Addition
+        # Noise Addition mit korrektem Scheduler
         noise = torch.randn_like(latents)
-        timesteps = torch.randint(0, 1000, (latents.shape[0],), device=self.device)
-        noisy_latents = latents + noise
+        timesteps = torch.randint(0, self.noise_scheduler.config.num_train_timesteps, (latents.shape[0],), device=self.device)
+        
+        # Korrekte Noise-Addition
+        noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
 
         # Classifier-free guidance training
         training_config = self.config.get("training", {})
@@ -138,11 +148,21 @@ class Trainer:
             noisy_latents, timesteps, encoder_hidden_states=encoder_hidden_states
         ).sample
 
-        loss = torch.nn.functional.mse_loss(noise_pred, noise)
+        # Bessere Loss-Berechnung
+        if self.noise_scheduler.config.prediction_type == "epsilon":
+            target = noise
+        else:
+            target = latents
+        
+        loss = torch.nn.functional.mse_loss(noise_pred, target)
 
         # Backward pass
         self.optimizer.zero_grad()
         loss.backward()
+        
+        # Gradient clipping hinzufügen
+        torch.nn.utils.clip_grad_norm_(self.unet.parameters(), 1.0)
+        
         self.optimizer.step()
 
         # Scheduler step
@@ -174,6 +194,10 @@ class Trainer:
             # Logging
             current_lr = self.optimizer.param_groups[0]['lr']
             self.logger.log_step(loss, current_lr, self.global_step)
+            
+            # Gradient logging für debugging
+            if self.global_step % 100 == 0:
+                self.logger.log_gradients(self.unet, self.global_step)
 
             # Loss tracking
             running_loss += loss

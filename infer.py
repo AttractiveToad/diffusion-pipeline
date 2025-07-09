@@ -14,36 +14,36 @@ class Inferencer:
     def __init__(self, config):
         self.config = config
         self.device = torch.device(config["device"])
-        self.max_size = self.config["max_image_size"]
+        self.max_size = self.config["image"]["max_size"]
         self.use_vae = self.max_size > 32
 
         # check and create directories
-        self.out_dir = self.config["out_dir"]
-        os.makedirs(self.config["out_dir"], exist_ok=True)
+        self.out_dir = self.config["paths"]["output_dir"]
+        os.makedirs(self.config["paths"]["output_dir"], exist_ok=True)
 
-        logging.info(f"Loading models for inference ({self.config['save_dir']}) ...")
+        logging.info(f"Loading models for inference ({self.config['paths']['save_dir']}) ...")
 
         # load UNet (now UNet2DConditionModel)
-        unet_path = f"{self.config['save_dir']}/unet"
+        unet_path = f"{self.config['paths']['save_dir']}/unet"
         self.unet = UNet2DConditionModel.from_pretrained(unet_path).to(self.device)
         self.unet.eval()
 
         # load VAE
         if self.use_vae:
-            vae_path = f"{self.config['save_dir']}/vae"
+            vae_path = f"{self.config['paths']['save_dir']}/vae"
             self.vae = AutoencoderKL.from_pretrained(vae_path).to(self.device)
             self.vae.eval()
         else:
             self.vae = None
 
         # load CLIP text encoder
-        clip_config_path = f"{self.config['save_dir']}/clip_config.yaml"
+        clip_config_path = f"{self.config['paths']['save_dir']}/clip_config.yaml"
         if os.path.exists(clip_config_path):
             with open(clip_config_path, 'r') as f:
                 clip_params = yaml.safe_load(f)
         else:
             # Fallback to default config
-            clip_config = self.config.get("clip_config", {})
+            clip_config = self.config.get("models", {}).get("clip", {})
             clip_params = {
                 "model_name": clip_config.get("model_name", "runwayml/stable-diffusion-v1-5"),
                 "max_length": clip_config.get("max_length", 77)
@@ -55,7 +55,7 @@ class Inferencer:
         self.text_encoder.eval()
 
         # Classifier-free guidance scale
-        clip_config = self.config.get("clip_config", {})
+        clip_config = self.config.get("models", {}).get("clip", {})
         self.guidance_scale = clip_config.get("guidance_scale", 7.5)
 
         logging.info("Models loaded and set to eval mode")

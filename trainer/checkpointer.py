@@ -1,6 +1,6 @@
 import os
-import yaml
 import logging
+import yaml
 
 
 class ModelCheckpointer:
@@ -43,28 +43,17 @@ class ModelCheckpointer:
         logging.info("Beste Modelle gespeichert")
 
     def save_config(self, unet_params, vae_params, clip_params):
-        """Save training configuration"""
-        config_path = os.path.join(self.save_dir, "training_config.yaml")
+        """Save only model parameters as backup"""
+        config_path = os.path.join(self.save_dir, "model_params.yaml")
 
-        # Extract relevant training config
-        training_config = self.config.get("training", {})
-        image_config = self.config.get("image", {})
-        dataset_config = self.config.get("dataset", {})
-
-        save_config = {
-            'model_params': {
-                'unet_params': unet_params,
-                'vae_params': vae_params,
-                'clip_params': clip_params
-            },
-            'training_config': {
-                'max_size': image_config.get("max_size"),
-                'batch_size': dataset_config.get("batch_size"),
-                'learning_rate': training_config.get("learning_rate"),
-                'epochs': training_config.get("epochs")
-            },
-            'full_config': self.config
+        # Nur die Model-Parameter speichern
+        model_params = {
+            'unet_params': unet_params,
+            'vae_params': vae_params,
+            'clip_params': clip_params
         }
 
         with open(config_path, 'w') as f:
-            yaml.dump(save_config, f, default_flow_style=False)
+            yaml.dump(model_params, f, default_flow_style=False)
+
+        logging.info(f"Model parameters saved to {config_path}")
